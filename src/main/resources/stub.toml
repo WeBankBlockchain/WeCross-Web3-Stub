@@ -1,0 +1,21 @@
+[common]
+    name = 'web3' # stub must be same with directory name
+    type = 'WEB3' # WEB3
+
+[service]
+    url = 'http://localhost:8545'
+    gasLimit = 12500000
+    gasPrice = 20000000000
+
+[[resources]]
+    name = 'WeCrossProxy'
+    type = 'WEB3_CONTRACT'
+    address = '0xdbF599778641083c9717Ec69e984D67d3309B811'
+    abi = '[{"constant":false,"inputs":[{"name":"n","type":"string"}],"name":"set","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"get","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]'
+
+[[resources]]
+    name = 'WeCrossHub'
+    type = 'WEB3_CONTRACT'
+    address = '0xdbF599778641083c9717Ec69e984D67d3309B811'
+    abi = '[{"constant":false,"inputs":[{"name":"n","type":"string"}],"name":"set","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"get","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]'
+
