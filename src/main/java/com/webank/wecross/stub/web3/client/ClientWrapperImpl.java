@@ -17,6 +17,7 @@ import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.utils.RevertReasonExtractor;
 
 public class ClientWrapperImpl implements ClientWrapper {
   private static final Logger logger = LoggerFactory.getLogger(ClientWrapperImpl.class);
@@ -106,6 +107,16 @@ public class ClientWrapperImpl implements ClientWrapper {
   @Override
   public BigInteger ethChainId() throws IOException {
     return web3j.ethChainId().send().getChainId();
+  }
+
+  public String extractRevertReason(TransactionReceipt transactionReceipt, String data)
+      throws IOException {
+    String revertReason =
+        RevertReasonExtractor.extractRevertReason(
+            transactionReceipt, data, web3j, true, BigInteger.ZERO);
+    // refresh receipt
+    transactionReceiptLRUCache.put(transactionReceipt.getTransactionHash(), transactionReceipt);
+    return revertReason;
   }
 
   private TransactionReceipt waitForTransactionReceipt(

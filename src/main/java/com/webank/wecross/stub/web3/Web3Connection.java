@@ -7,6 +7,7 @@ import com.webank.wecross.stub.Request;
 import com.webank.wecross.stub.ResourceInfo;
 import com.webank.wecross.stub.Response;
 import com.webank.wecross.stub.web3.client.ClientWrapper;
+import com.webank.wecross.stub.web3.client.ClientWrapperImpl;
 import com.webank.wecross.stub.web3.common.ObjectMapperFactory;
 import com.webank.wecross.stub.web3.common.Web3Constant;
 import com.webank.wecross.stub.web3.common.Web3RequestType;
@@ -27,12 +28,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
+import org.web3j.crypto.TransactionDecoder;
 import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthCall;
@@ -43,6 +46,7 @@ import org.web3j.utils.Numeric;
 
 public class Web3Connection implements Connection {
   private static final Logger logger = LoggerFactory.getLogger(Web3Connection.class);
+  public static final String RECEIPT_SUCCESS = "0x1";
 
   private final ObjectMapper objectMapper = ObjectMapperFactory.getObjectMapper();
   private List<ResourceInfo> resourceInfoList = new ArrayList<>();
@@ -108,11 +112,15 @@ public class Web3Connection implements Connection {
 
   private void handleAsyncGetTransaction(Request request, Callback callback) {
     Response response = new Response();
+    response.setErrorCode(Web3StatusCode.Success);
+    response.setErrorMessage(Web3StatusCode.getStatusMessage(Web3StatusCode.Success));
     try {
       String transactionHash = new String(request.getData(), StandardCharsets.UTF_8);
       Transaction transaction = clientWrapper.ethGetTransactionByHash(transactionHash);
       TransactionReceipt transactionReceipt =
           clientWrapper.ethGetTransactionReceipt(transactionHash);
+
+      // transaction or transactionReceipt is null
       if (Objects.isNull(transaction)
           || Objects.isNull(transaction.getHash())
           || Objects.isNull(transactionReceipt)
@@ -122,8 +130,15 @@ public class Web3Connection implements Connection {
         return;
       }
 
-      response.setErrorCode(Web3StatusCode.Success);
-      response.setErrorMessage(Web3StatusCode.getStatusMessage(Web3StatusCode.Success));
+      // transaction is revert
+      String receiptStatus = transactionReceipt.getStatus();
+      String revertReason = transactionReceipt.getRevertReason();
+      if (!Objects.equals(receiptStatus, RECEIPT_SUCCESS) && StringUtils.isBlank(revertReason)) {
+        if (clientWrapper instanceof ClientWrapperImpl) {
+          ClientWrapperImpl clientWrapperImpl = (ClientWrapperImpl) clientWrapper;
+          clientWrapperImpl.extractRevertReason(transactionReceipt, transaction.getInput());
+        }
+      }
       response.setData(
           objectMapper.writeValueAsBytes(new TransactionPair(transaction, transactionReceipt)));
 
@@ -134,9 +149,8 @@ public class Web3Connection implements Connection {
             transaction,
             transactionReceipt);
       }
-
     } catch (Exception e) {
-      logger.warn("handleAsyncGetTransaction Exception, e: ", e);
+      logger.error("handleAsyncGetTransaction Exception, e: ", e);
       response.setErrorCode(Web3StatusCode.HandleGetTransactionFailed);
       response.setErrorMessage(e.getMessage());
     } finally {
@@ -155,18 +169,20 @@ public class Web3Connection implements Connection {
       }
       // from chain
       EthBlock.Block block = clientWrapper.ethGetBlockByNumber(blockNumber);
+
+      // block is null
       if (Objects.isNull(block)) {
         response.setErrorCode(Web3StatusCode.BlockNotExist);
         response.setErrorMessage(Web3StatusCode.getStatusMessage(Web3StatusCode.BlockNotExist));
         return;
       }
-      response.setData(objectMapper.writeValueAsBytes(block));
 
+      response.setData(objectMapper.writeValueAsBytes(block));
       if (logger.isDebugEnabled()) {
         logger.debug("handleAsyncGetBlockRequest,blockNumber: {}, block: {}", blockNumber, block);
       }
     } catch (Exception e) {
-      logger.warn("handleAsyncGetBlockRequest Exception, e: ", e);
+      logger.error("handleAsyncGetBlockRequest Exception, e: ", e);
       response.setErrorCode(Web3StatusCode.HandleGetBlockFailed);
       response.setErrorMessage(e.getMessage());
     } finally {
@@ -176,16 +192,17 @@ public class Web3Connection implements Connection {
 
   private void handleAsyncGetBlockNumberRequest(Callback callback) {
     Response response = new Response();
+    response.setErrorCode(Web3StatusCode.Success);
+    response.setErrorMessage(Web3StatusCode.getStatusMessage(Web3StatusCode.Success));
     try {
       BigInteger blockNumber = clientWrapper.ethBlockNumber();
       if (logger.isDebugEnabled()) {
         logger.debug("handleAsyncGetBlockNumberRequest,blockNumber: {}", blockNumber);
       }
-      response.setErrorCode(Web3StatusCode.Success);
-      response.setErrorMessage(Web3StatusCode.getStatusMessage(Web3StatusCode.Success));
+
       response.setData(blockNumber.toByteArray());
     } catch (Exception e) {
-      logger.warn("handleGetBlockNumberRequest Exception, e: ", e);
+      logger.error("handleGetBlockNumberRequest Exception, e: ", e);
       response.setErrorCode(Web3StatusCode.HandleGetBlockNumberFailed);
       response.setErrorMessage(e.getMessage());
     } finally {
@@ -214,6 +231,7 @@ public class Web3Connection implements Connection {
               from, nonce, gasPrice, gasLimit, to, data);
       EthCall ethCall = clientWrapper.ethCall(transaction);
 
+      // ethCall has error
       if (ethCall.hasError()) {
         response.setErrorCode(Web3StatusCode.CallNotSuccessStatus);
         response.setErrorMessage(ethCall.getError().getMessage());
@@ -222,7 +240,7 @@ public class Web3Connection implements Connection {
 
       response.setData(objectMapper.writeValueAsBytes(ethCall));
     } catch (Exception e) {
-      logger.warn("handleAsyncCallRequest Exception:", e);
+      logger.error("handleAsyncCallRequest Exception:", e);
       response.setErrorCode(Web3StatusCode.HandleCallRequestFailed);
       response.setErrorMessage(e.getMessage());
     } finally {
@@ -245,30 +263,50 @@ public class Web3Connection implements Connection {
       String signedTransactionData = transactionParams.getData();
       EthSendTransaction ethSendTransaction =
           clientWrapper.ethSendRawTransaction(signedTransactionData);
+
+      // ethSendTransaction has error
       if (ethSendTransaction.hasError()) {
         response.setErrorCode(Web3StatusCode.SendTransactionNotSuccessStatus);
         response.setErrorMessage(ethSendTransaction.getError().getMessage());
+        return;
       }
 
       // get transactionReceipt
       String transactionHash = ethSendTransaction.getTransactionHash();
       TransactionReceipt transactionReceipt =
           clientWrapper.ethGetTransactionReceipt(transactionHash);
+
+      // transactionReceipt is null
       if (Objects.isNull(transactionReceipt)) {
         response.setErrorCode(Web3StatusCode.TransactionReceiptNotExist);
         response.setErrorMessage(
             Web3StatusCode.getStatusMessage(Web3StatusCode.TransactionReceiptNotExist));
         return;
       }
+
+      // transaction is revert
       String receiptStatus = transactionReceipt.getStatus();
-      if (!Objects.equals(receiptStatus, "0x1")) {
+      if (!Objects.equals(receiptStatus, RECEIPT_SUCCESS)) {
+        // decode revertReason
+        String revertReason = transactionReceipt.getRevertReason();
+        if (StringUtils.isBlank(revertReason)) {
+          if (clientWrapper instanceof ClientWrapperImpl) {
+            ClientWrapperImpl clientWrapperImpl = (ClientWrapperImpl) clientWrapper;
+            RawTransaction originalRawTransaction =
+                TransactionDecoder.decode(signedTransactionData);
+            revertReason =
+                clientWrapperImpl.extractRevertReason(
+                    transactionReceipt, originalRawTransaction.getData());
+          }
+        }
         response.setErrorCode(Web3StatusCode.SendTransactionNotSuccessStatus);
-        response.setErrorMessage(transactionReceipt.getRevertReason());
+        response.setErrorMessage(revertReason);
         return;
       }
+
       response.setData(objectMapper.writeValueAsBytes(transactionReceipt));
     } catch (Exception e) {
-      logger.warn("handleAsyncTransactionRequest Exception:", e);
+      logger.error("handleAsyncTransactionRequest Exception:", e);
       response.setErrorCode(Web3StatusCode.HandleSendTransactionFailed);
       response.setErrorMessage(e.getMessage());
     } finally {

@@ -6,4 +6,4 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-rootProject.name = 'web3-stub'
+rootProject.name = 'WeCross-Web3-Stub'
