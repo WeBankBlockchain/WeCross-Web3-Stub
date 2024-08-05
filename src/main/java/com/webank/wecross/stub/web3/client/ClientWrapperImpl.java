@@ -109,6 +109,16 @@ public class ClientWrapperImpl implements ClientWrapper {
     return web3j.ethChainId().send().getChainId();
   }
 
+  @Override
+  public BigInteger ethGasPrice() throws IOException {
+    return web3j.ethGasPrice().send().getGasPrice();
+  }
+
+  @Override
+  public BigInteger ethGasLimit() throws IOException {
+    return web3j.ethMaxPriorityFeePerGas().send().getMaxPriorityFeePerGas();
+  }
+
   public String extractRevertReason(TransactionReceipt transactionReceipt, String data)
       throws IOException {
     String revertReason =

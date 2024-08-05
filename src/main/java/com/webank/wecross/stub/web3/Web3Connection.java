@@ -12,37 +12,25 @@ import com.webank.wecross.stub.web3.common.ObjectMapperFactory;
 import com.webank.wecross.stub.web3.common.Web3Constant;
 import com.webank.wecross.stub.web3.common.Web3RequestType;
 import com.webank.wecross.stub.web3.common.Web3StatusCode;
-import com.webank.wecross.stub.web3.common.Web3StubException;
-import com.webank.wecross.stub.web3.config.Web3StubConfig;
 import com.webank.wecross.stub.web3.protocol.request.TransactionParams;
 import com.webank.wecross.stub.web3.protocol.response.TransactionPair;
-import com.webank.wecross.stub.web3.utils.FunctionUtility;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.web3j.abi.FunctionEncoder;
-import org.web3j.abi.datatypes.Function;
-import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionDecoder;
-import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.web3j.utils.Numeric;
 
 public class Web3Connection implements Connection {
   private static final Logger logger = LoggerFactory.getLogger(Web3Connection.class);
@@ -50,36 +38,13 @@ public class Web3Connection implements Connection {
 
   private final ObjectMapper objectMapper = ObjectMapperFactory.getObjectMapper();
   private List<ResourceInfo> resourceInfoList = new ArrayList<>();
-  private List<ResourceInfo> resourcesCache = new ArrayList<>();
   private ConnectionEventHandler eventHandler;
   private final Map<String, String> properties = new HashMap<>();
   private final ClientWrapper clientWrapper;
 
-  private final BigInteger chainId;
-  private final BigInteger gasPrice;
-  private final BigInteger gasLimit;
-
-  public Web3Connection(
-      BigInteger chainId,
-      Web3StubConfig web3StubConfig,
-      ClientWrapper clientWrapper,
-      ScheduledExecutorService scheduledExecutorService) {
+  public Web3Connection(ClientWrapper clientWrapper) {
     this.objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     this.clientWrapper = clientWrapper;
-    this.chainId = chainId;
-    this.gasPrice = web3StubConfig.getService().getGasPrice();
-    this.gasLimit = web3StubConfig.getService().getGasLimit();
-
-    // refresh resource
-    scheduledExecutorService.scheduleAtFixedRate(
-        () -> {
-          if (Objects.nonNull(eventHandler)) {
-            noteOnResourcesChange();
-          }
-        },
-        10000,
-        30000,
-        TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -227,8 +192,8 @@ public class Web3Connection implements Connection {
 
       // build Transaction
       org.web3j.protocol.core.methods.request.Transaction transaction =
-          org.web3j.protocol.core.methods.request.Transaction.createFunctionCallTransaction(
-              from, nonce, gasPrice, gasLimit, to, data);
+          org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+              from, to, data);
       EthCall ethCall = clientWrapper.ethCall(transaction);
 
       // ethCall has error
@@ -311,102 +276,6 @@ public class Web3Connection implements Connection {
       response.setErrorMessage(e.getMessage());
     } finally {
       callback.onResponse(response);
-    }
-  }
-
-  private void noteOnResourcesChange() {
-    synchronized (this) {
-      List<ResourceInfo> resources = getResources();
-      if (!resources.equals(resourcesCache) && !resources.isEmpty()) {
-        eventHandler.onResourcesChange(resources);
-        resourcesCache = resources;
-        if (logger.isDebugEnabled()) {
-          logger.debug("resources notify, resources: {}", resources);
-        }
-      }
-    }
-  }
-
-  public List<ResourceInfo> getResources() {
-    List<ResourceInfo> resourceInfos =
-        new ArrayList<ResourceInfo>() {
-          {
-            addAll(resourceInfoList);
-          }
-        };
-    String[] resources = listResources();
-    if (Objects.nonNull(resources)) {
-      for (String resource : resources) {
-        ResourceInfo resourceInfo = new ResourceInfo();
-        resourceInfo.setStubType(getProperty(Web3Constant.WEB3_PROPERTY_STUB_TYPE));
-        resourceInfo.setName(resource);
-        Map<Object, Object> resourceProperties = resourceInfo.getProperties();
-        resourceProperties.put(
-            Web3Constant.WEB3_PROPERTY_CHAIN_ID, getProperty(Web3Constant.WEB3_PROPERTY_CHAIN_ID));
-        resourceInfos.add(resourceInfo);
-      }
-    }
-    return resourceInfos;
-  }
-
-  public String[] listResources() {
-    try {
-      Function function =
-          FunctionUtility.newDefaultFunction(FunctionUtility.ProxyGetResourcesMethodName, null);
-      String data = FunctionEncoder.encode(function);
-      String from = Web3Constant.DEFAULT_ADDRESS;
-      String to = properties.get(Web3Constant.WEB3_PROXY_NAME);
-      BigInteger nonce = clientWrapper.getNonce(from);
-      org.web3j.protocol.core.methods.request.Transaction callTransaction =
-          org.web3j.protocol.core.methods.request.Transaction.createFunctionCallTransaction(
-              from, nonce, gasPrice, gasLimit, to, data);
-      EthCall ethCall = clientWrapper.ethCall(callTransaction);
-
-      if (ethCall.hasError()) {
-        logger.error("listResources failed, error {}", ethCall.getError().getMessage());
-        throw new Web3StubException(
-            Web3StatusCode.ListResourcesFailed, ethCall.getError().getMessage());
-      }
-      String[] resources = FunctionUtility.decodeDefaultOutput(ethCall.getResult());
-      Set<String> set = new LinkedHashSet<>();
-      if (Objects.nonNull(resources) && resources.length != 0) {
-        for (int i = resources.length - 1; i >= 0; i--) {
-          set.add(resources[i]);
-        }
-      } else {
-        logger.debug("No path found and add system resources");
-      }
-      return set.toArray(new String[0]);
-    } catch (Exception e) {
-      logger.error("listPaths failed,", e);
-      return null;
-    }
-  }
-
-  public void registerCNS(String path, String address) {
-    try {
-      // todo credentials where get
-      Credentials credentials = null;
-
-      Function function = FunctionUtility.newRegisterCNSProxyFunction(path, address);
-      String data = FunctionEncoder.encode(function);
-
-      String to = properties.get(Web3Constant.WEB3_PROXY_NAME);
-      BigInteger nonce = clientWrapper.getNonce(credentials.getAddress());
-      RawTransaction rawTransaction =
-          RawTransaction.createTransaction(nonce, gasPrice, gasLimit, to, data);
-      byte[] signedMessage =
-          TransactionEncoder.signMessage(rawTransaction, chainId.longValue(), credentials);
-      String signedTransactionData = Numeric.toHexString(signedMessage);
-      EthSendTransaction ethSendTransaction =
-          clientWrapper.ethSendRawTransaction(signedTransactionData);
-      if (ethSendTransaction.hasError()) {
-        logger.error("registerCNS failed, error {}", ethSendTransaction.getError().getMessage());
-        throw new Web3StubException(
-            Web3StatusCode.RegisterContractFailed, ethSendTransaction.getError().getMessage());
-      }
-    } catch (Exception e) {
-      logger.error("registerCNS fail,path:{},address:{}", path, address, e);
     }
   }
 

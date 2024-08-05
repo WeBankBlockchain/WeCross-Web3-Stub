@@ -27,4 +27,8 @@ public interface ClientWrapper {
   BigInteger getNonce(String address) throws IOException;
 
   BigInteger ethChainId() throws IOException;
+
+  BigInteger ethGasPrice() throws IOException;
+
+  BigInteger ethGasLimit() throws IOException;
 }

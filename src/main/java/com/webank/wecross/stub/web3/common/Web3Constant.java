@@ -5,6 +5,8 @@ import com.webank.wecross.stub.StubConstant;
 public interface Web3Constant {
 
   String STUB_TOML_NAME = "stub.toml";
+  String ACCOUNT_TOML_NAME = "account.toml";
+  String WEB3_STUB_TYPE = "WEB3";
 
   String WEB3_PROXY_NAME = StubConstant.PROXY_NAME;
   String WEB3_HUB_NAME = StubConstant.HUB_NAME;
@@ -13,7 +15,4 @@ public interface Web3Constant {
   String WEB3_PROPERTY_CHAIN_ID = "WEB3_PROPERTY_CHAIN_ID";
   String WEB3_PROPERTY_STUB_TYPE = "WEB3_PROPERTY_STUB_TYPE";
   String WEB3_PROPERTY_CHAIN_URL = "WEB3_PROPERTY_CHAIN_URL";
-  String WEB3_PROPERTY_GAS_LIMIT = "WEB3_PROPERTY_GAS_LIMIT";
-  String WEB3_PROPERTY_GAS_PRICE = "WEB3_PROPERTY_GAS_PRICE";
-  String DEFAULT_ADDRESS = "0x1111111111111111111111111111111111111111";
 }

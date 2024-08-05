@@ -2,7 +2,6 @@ package com.webank.wecross.stub.web3.config;
 
 import com.webank.wecross.stub.ResourceInfo;
 import com.webank.wecross.stub.web3.common.Web3Constant;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +58,6 @@ public class Web3StubConfig {
 
   public static class Service {
     private String url;
-    private BigInteger gasLimit;
-    private BigInteger gasPrice;
 
     public String getUrl() {
       return url;
@@ -68,35 +65,6 @@ public class Web3StubConfig {
 
     public void setUrl(String url) {
       this.url = url;
-    }
-
-    public BigInteger getGasLimit() {
-      return gasLimit;
-    }
-
-    public void setGasLimit(BigInteger gasLimit) {
-      this.gasLimit = gasLimit;
-    }
-
-    public BigInteger getGasPrice() {
-      return gasPrice;
-    }
-
-    public void setGasPrice(BigInteger gasPrice) {
-      this.gasPrice = gasPrice;
-    }
-
-    @Override
-    public String toString() {
-      return "Service{"
-          + "url='"
-          + url
-          + '\''
-          + ", gasLimit="
-          + gasLimit
-          + ", gasPrice="
-          + gasPrice
-          + '}';
     }
   }
 
