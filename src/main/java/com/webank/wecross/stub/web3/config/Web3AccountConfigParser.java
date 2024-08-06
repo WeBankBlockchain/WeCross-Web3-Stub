@@ -18,6 +18,8 @@ public class Web3AccountConfigParser extends AbstractWeb3ConfigParser {
   public Web3AccountConfig loadConfig() throws IOException {
     Web3Toml web3Toml = new Web3Toml(getConfigPath());
     Toml toml = web3Toml.getToml();
-    return toml.to(Web3AccountConfig.class);
+    Web3AccountConfig web3AccountConfig = toml.to(Web3AccountConfig.class);
+    web3AccountConfig.setAccountConfigPath(getConfigPath());
+    return web3AccountConfig;
   }
 }

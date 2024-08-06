@@ -2,6 +2,7 @@ package com.webank.wecross.stub.web3;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.moandjiezana.toml.Toml;
 import com.webank.wecross.stub.Connection;
 import com.webank.wecross.stub.Request;
 import com.webank.wecross.stub.ResourceInfo;
@@ -12,8 +13,10 @@ import com.webank.wecross.stub.web3.common.ObjectMapperFactory;
 import com.webank.wecross.stub.web3.common.Web3Constant;
 import com.webank.wecross.stub.web3.common.Web3RequestType;
 import com.webank.wecross.stub.web3.common.Web3StatusCode;
+import com.webank.wecross.stub.web3.config.Web3StubConfig;
 import com.webank.wecross.stub.web3.protocol.request.TransactionParams;
 import com.webank.wecross.stub.web3.protocol.response.TransactionPair;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -21,9 +24,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionDecoder;
 import org.web3j.protocol.core.methods.response.EthBlock;
@@ -41,10 +50,49 @@ public class Web3Connection implements Connection {
   private ConnectionEventHandler eventHandler;
   private final Map<String, String> properties = new HashMap<>();
   private final ClientWrapper clientWrapper;
+  private final BigInteger chainId;
+  private final String stubConfigFilePath;
+  private long stubConfigFileLastModified;
 
-  public Web3Connection(ClientWrapper clientWrapper) {
+  public Web3Connection(ClientWrapper clientWrapper, Web3StubConfig web3StubConfig)
+      throws IOException {
     this.objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     this.clientWrapper = clientWrapper;
+    this.chainId = clientWrapper.ethChainId();
+    this.stubConfigFilePath = web3StubConfig.getStubConfigPath();
+    // init
+    refreshStubConfig(web3StubConfig);
+
+    // refresh
+    ScheduledExecutorService executorService =
+        new ScheduledThreadPoolExecutor(1, new CustomizableThreadFactory("refreshStubConfig-"));
+    executorService.scheduleAtFixedRate(
+        () -> {
+          try {
+            PathMatchingResourcePatternResolver resolver =
+                new PathMatchingResourcePatternResolver();
+            Resource resource = resolver.getResource(stubConfigFilePath);
+            long lastModified = resource.getFile().lastModified();
+            if (Objects.equals(stubConfigFileLastModified, lastModified)) {
+              return;
+            }
+            Web3StubConfig newWeb3StubConfig =
+                new Toml().read(resource.getInputStream()).to(Web3StubConfig.class);
+            newWeb3StubConfig.setStubConfigPath(stubConfigFilePath);
+            // changed
+            refreshStubConfig(newWeb3StubConfig);
+            if (Objects.nonNull(eventHandler)) {
+              // refresh remote resource
+              eventHandler.onResourcesChange(resourceInfoList);
+            }
+            this.stubConfigFileLastModified = lastModified;
+          } catch (IOException e) {
+            logger.error("refreshStubConfig Exception:", e);
+          }
+        },
+        30000,
+        30000,
+        TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -73,6 +121,16 @@ public class Web3Connection implements Connection {
               + request.getType());
       callback.onResponse(response);
     }
+  }
+
+  @Override
+  public Map<String, String> getProperties() {
+    return properties;
+  }
+
+  @Override
+  public void setConnectionEventHandler(ConnectionEventHandler eventHandler) {
+    this.eventHandler = eventHandler;
   }
 
   private void handleAsyncGetTransaction(Request request, Callback callback) {
@@ -279,6 +337,24 @@ public class Web3Connection implements Connection {
     }
   }
 
+  private synchronized void refreshStubConfig(Web3StubConfig web3StubConfig) throws IOException {
+    this.resourceInfoList = web3StubConfig.convertToResourceInfos();
+
+    addProperty(Web3Constant.WEB3_PROPERTY_CHAIN_ID, chainId.toString());
+    addProperty(Web3Constant.WEB3_PROPERTY_STUB_TYPE, web3StubConfig.getCommon().getType());
+    addProperty(Web3Constant.WEB3_PROPERTY_CHAIN_URL, web3StubConfig.getService().getUrl());
+    List<Web3StubConfig.Resource> resources = web3StubConfig.getResources();
+    if (!resources.isEmpty()) {
+      for (Web3StubConfig.Resource resource : resources) {
+        String name = resource.getName();
+        // name->address
+        this.addProperty(name, resource.getAddress());
+        // name+ABI->abi
+        this.addAbi(name, resource.getAbi());
+      }
+    }
+  }
+
   public boolean hasProxyDeployed() {
     return getProperties().containsKey(Web3Constant.WEB3_PROXY_NAME);
   }
@@ -289,20 +365,6 @@ public class Web3Connection implements Connection {
 
   public List<ResourceInfo> getResourceInfoList() {
     return resourceInfoList;
-  }
-
-  public void setResourceInfoList(List<ResourceInfo> resourceInfoList) {
-    this.resourceInfoList = resourceInfoList;
-  }
-
-  @Override
-  public Map<String, String> getProperties() {
-    return properties;
-  }
-
-  @Override
-  public void setConnectionEventHandler(ConnectionEventHandler eventHandler) {
-    this.eventHandler = eventHandler;
   }
 
   public void addProperty(String key, String value) {
@@ -323,5 +385,9 @@ public class Web3Connection implements Connection {
 
   public ClientWrapper getClientWrapper() {
     return clientWrapper;
+  }
+
+  public BigInteger getChainId() {
+    return chainId;
   }
 }

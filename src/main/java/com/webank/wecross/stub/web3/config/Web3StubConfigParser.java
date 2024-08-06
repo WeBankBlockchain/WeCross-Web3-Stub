@@ -18,6 +18,8 @@ public class Web3StubConfigParser extends AbstractWeb3ConfigParser {
   public Web3StubConfig loadConfig() throws IOException {
     Web3Toml web3Toml = new Web3Toml(getConfigPath());
     Toml toml = web3Toml.getToml();
-    return toml.to(Web3StubConfig.class);
+    Web3StubConfig web3StubConfig = toml.to(Web3StubConfig.class);
+    web3StubConfig.setStubConfigPath(getConfigPath());
+    return web3StubConfig;
   }
 }
