@@ -30,7 +30,7 @@ public class Web3StatusCode {
   public static final int ABINotExist = 2040;
   public static final int EncodeAbiFailed = 2041;
   public static final int MethodNotExist = 2042;
-
+  public static final int AddressNotExist = 2043;
   public static final int UnsupportedRPC = 2050;
   public static final int UnclassifiedError = 2100;
 

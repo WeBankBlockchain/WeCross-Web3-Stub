@@ -90,7 +90,7 @@ dependencies {
         exclude group: "io.netty"
         exclude group: 'org.fisco-bcos', module: 'tcnative'
     }
-
+    implementation('org.fisco-bcos.java-sdk:fisco-bcos-sdk-abi:2.10.0-SNAPSHOT')
     implementation 'org.web3j:core:4.9.8'
 
     // implementation('org.fisco-bcos.java-sdk:fisco-bcos-sdk-abi:2.10.0-SNAPSHOT')

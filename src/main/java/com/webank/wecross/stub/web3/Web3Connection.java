@@ -246,7 +246,6 @@ public class Web3Connection implements Connection {
       String from = transactionParams.getFrom();
       String to = transactionParams.getTo();
       String data = transactionParams.getData();
-      BigInteger nonce = clientWrapper.getNonce(from);
 
       // build Transaction
       org.web3j.protocol.core.methods.request.Transaction transaction =
@@ -337,7 +336,7 @@ public class Web3Connection implements Connection {
     }
   }
 
-  private synchronized void refreshStubConfig(Web3StubConfig web3StubConfig) throws IOException {
+  private synchronized void refreshStubConfig(Web3StubConfig web3StubConfig) {
     this.resourceInfoList = web3StubConfig.convertToResourceInfos();
 
     addProperty(Web3Constant.WEB3_PROPERTY_CHAIN_ID, chainId.toString());
