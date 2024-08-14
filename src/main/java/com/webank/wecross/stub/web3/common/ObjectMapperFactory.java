@@ -36,6 +36,7 @@ public class ObjectMapperFactory {
     SimpleModule simpleModule = new SimpleModule();
     simpleModule.addSerializer(EthBlock.TransactionHash.class, new TransactionHashSerialize());
     simpleModule.addSerializer(Transaction.class, new TransactionSerialize());
+    objectMapper.registerModule(simpleModule);
     return objectMapper;
   }
 

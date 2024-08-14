@@ -19,7 +19,7 @@ public class Web3BaseStubFactory implements StubFactory {
 
   @Override
   public Driver newDriver() {
-    return null;
+    return new Web3Driver();
   }
 
   @Override
