@@ -17,7 +17,6 @@ import com.webank.wecross.stub.TransactionResponse;
 import com.webank.wecross.stub.web3.account.Web3Account;
 import com.webank.wecross.stub.web3.client.ClientWrapper;
 import com.webank.wecross.stub.web3.common.ObjectMapperFactory;
-import com.webank.wecross.stub.web3.common.Web3Constant;
 import com.webank.wecross.stub.web3.common.Web3RequestType;
 import com.webank.wecross.stub.web3.common.Web3StatusCode;
 import com.webank.wecross.stub.web3.common.Web3StubException;
@@ -143,8 +142,9 @@ public class Web3Driver implements Driver {
       String from = context.getAccount().getIdentity();
       Path path = context.getPath();
       String name = path.getResource();
+      Web3Connection web3Connection = (Web3Connection) connection;
       Map<String, String> properties = connection.getProperties();
-      String contractAbi = properties.get(name + Web3Constant.WEB3_PROPERTY_ABI_SUFFIX);
+      String contractAbi = web3Connection.getAbi(name);
       String contractAddress = properties.get(name);
       checkContract(name, contractAddress, contractAbi);
       String[] args = request.getArgs();
@@ -219,16 +219,16 @@ public class Web3Driver implements Driver {
       Credentials credentials = ((Web3Account) context.getAccount()).getCredentials();
       Path path = context.getPath();
       String name = path.getResource();
+      Web3Connection web3Connection = (Web3Connection) connection;
       Map<String, String> properties = connection.getProperties();
       String contractAddress = properties.get(name);
-      String contractAbi = properties.get(name + Web3Constant.WEB3_PROPERTY_ABI_SUFFIX);
+      String contractAbi = web3Connection.getAbi(name);
       checkContract(name, contractAddress, contractAbi);
       String[] args = request.getArgs();
       String method = request.getMethod();
       String encodedMethodWithArgs =
           abiCodec.encodeMethodFromString(
               contractAbi, method, args != null ? Arrays.asList(args) : new ArrayList<>());
-      Web3Connection web3Connection = (Web3Connection) connection;
       ClientWrapper clientWrapper = web3Connection.getClientWrapper();
       BigInteger nonce = clientWrapper.getNonce(context.getAccount().getIdentity());
       BigInteger gasLimit = clientWrapper.ethGasLimit();
