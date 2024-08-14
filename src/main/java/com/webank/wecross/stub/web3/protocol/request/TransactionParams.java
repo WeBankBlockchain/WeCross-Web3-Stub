@@ -38,8 +38,6 @@ public class TransactionParams {
   }
 
   public enum SUB_TYPE {
-    SEND_TX_BY_PROXY,
-    CALL_BY_PROXY,
     SEND_TX,
     CALL
   }

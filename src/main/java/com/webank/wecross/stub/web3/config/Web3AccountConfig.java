@@ -8,8 +8,6 @@ public class Web3AccountConfig {
 
   private Account account;
 
-  private String accountConfigPath;
-
   public static class Account {
     private String type;
     private String accountFile;
@@ -63,22 +61,8 @@ public class Web3AccountConfig {
     this.account = account;
   }
 
-  public String getAccountConfigPath() {
-    return accountConfigPath;
-  }
-
-  public void setAccountConfigPath(String accountConfigPath) {
-    this.accountConfigPath = accountConfigPath;
-  }
-
   @Override
   public String toString() {
-    return "Web3AccountConfig{"
-        + "account="
-        + account
-        + ", accountConfigPath='"
-        + accountConfigPath
-        + '\''
-        + '}';
+    return "Web3AccountConfig{" + "account=" + account + '}';
   }
 }

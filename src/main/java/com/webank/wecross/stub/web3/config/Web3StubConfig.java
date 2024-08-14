@@ -15,8 +15,6 @@ public class Web3StubConfig {
   private Service service;
   private List<Resource> resources;
 
-  private String stubConfigPath;
-
   public List<ResourceInfo> convertToResourceInfos() {
     List<ResourceInfo> resourceInfos = new ArrayList<>();
     for (Resource resource : this.getResources()) {
@@ -71,8 +69,8 @@ public class Web3StubConfig {
   }
 
   public static class Resource {
-    private String type;
     private String name;
+    private String type;
     private String address;
     private String abi;
 
@@ -151,14 +149,6 @@ public class Web3StubConfig {
     this.resources = resources;
   }
 
-  public String getStubConfigPath() {
-    return stubConfigPath;
-  }
-
-  public void setStubConfigPath(String stubConfigPath) {
-    this.stubConfigPath = stubConfigPath;
-  }
-
   @Override
   public String toString() {
     return "Web3StubConfig{"
@@ -168,9 +158,6 @@ public class Web3StubConfig {
         + service
         + ", resources="
         + resources
-        + ", stubConfigPath='"
-        + stubConfigPath
-        + '\''
         + '}';
   }
 }
