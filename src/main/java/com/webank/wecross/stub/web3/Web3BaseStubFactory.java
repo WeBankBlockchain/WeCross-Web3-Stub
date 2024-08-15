@@ -7,6 +7,8 @@ import com.webank.wecross.stub.StubFactory;
 import com.webank.wecross.stub.WeCrossContext;
 import com.webank.wecross.stub.web3.account.Web3AccountFactory;
 import com.webank.wecross.stub.web3.common.Web3Constant;
+import com.webank.wecross.stub.web3.custom.CommandHandlerDispatcher;
+import com.webank.wecross.stub.web3.custom.RegisterResourceHandler;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +21,10 @@ public class Web3BaseStubFactory implements StubFactory {
 
   @Override
   public Driver newDriver() {
-    return new Web3Driver();
+    CommandHandlerDispatcher commandHandlerDispatcher = new CommandHandlerDispatcher();
+    commandHandlerDispatcher.registerCommandHandler(
+        Web3Constant.CUSTOM_COMMAND_REGISTER, new RegisterResourceHandler());
+    return new Web3Driver(commandHandlerDispatcher);
   }
 
   @Override

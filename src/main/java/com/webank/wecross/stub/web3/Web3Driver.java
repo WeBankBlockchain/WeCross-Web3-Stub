@@ -21,6 +21,8 @@ import com.webank.wecross.stub.web3.common.Web3RequestType;
 import com.webank.wecross.stub.web3.common.Web3StatusCode;
 import com.webank.wecross.stub.web3.common.Web3StubException;
 import com.webank.wecross.stub.web3.contract.BlockUtility;
+import com.webank.wecross.stub.web3.custom.CommandHandler;
+import com.webank.wecross.stub.web3.custom.CommandHandlerDispatcher;
 import com.webank.wecross.stub.web3.protocol.request.TransactionParams;
 import com.webank.wecross.stub.web3.protocol.response.TransactionPair;
 import com.webank.wecross.stub.web3.uaproof.Signer;
@@ -57,12 +59,14 @@ public class Web3Driver implements Driver {
   private final ABICodecJsonWrapper codecJsonWrapper;
   private final ABICodec abiCodec;
   private final ABIDefinitionFactory abiDefinitionFactory;
+  private final CommandHandlerDispatcher commandHandlerDispatcher;
 
-  public Web3Driver() {
+  public Web3Driver(CommandHandlerDispatcher commandHandlerDispatcher) {
     CryptoSuite cryptoSuite = new CryptoSuite(CryptoType.ECDSA_TYPE);
     this.codecJsonWrapper = new ABICodecJsonWrapper(true);
     this.abiCodec = new ABICodec(cryptoSuite, true);
     this.abiDefinitionFactory = new ABIDefinitionFactory(cryptoSuite);
+    this.commandHandlerDispatcher = commandHandlerDispatcher;
   }
 
   @Override
@@ -402,7 +406,14 @@ public class Web3Driver implements Driver {
       Account account,
       BlockManager blockManager,
       Connection connection,
-      CustomCommandCallback callback) {}
+      CustomCommandCallback callback) {
+    CommandHandler commandHandler = commandHandlerDispatcher.matchCommandHandler(command);
+    if (Objects.isNull(commandHandler)) {
+      callback.onResponse(new Exception("command not supported: " + command), null);
+      return;
+    }
+    commandHandler.handle(path, args, account, blockManager, connection, callback);
+  }
 
   @Override
   public byte[] accountSign(Account account, byte[] message) {

@@ -14,13 +14,18 @@ public class Web3ConnectionFactory {
   public static Web3Connection build(String stubConfigPath, String configName) throws Exception {
     Web3StubConfigParser web3StubConfigParser =
         new Web3StubConfigParser(stubConfigPath, configName);
+    String configPath = web3StubConfigParser.getConfigPath();
     Web3StubConfig web3StubConfig = web3StubConfigParser.loadConfig();
-    return build(web3StubConfig);
+    return build(web3StubConfig, configPath);
   }
 
-  public static Web3Connection build(Web3StubConfig web3StubConfig) throws IOException {
+  public static Web3Connection build(Web3StubConfig web3StubConfig, String configPath)
+      throws IOException {
     logger.info("web3StubConfig: {}", web3StubConfig);
     ClientWrapper clientWrapper = ClientWrapperFactory.createClientWrapperInstance(web3StubConfig);
-    return new Web3Connection(clientWrapper, web3StubConfig);
+    Web3Connection web3Connection = new Web3Connection(clientWrapper, configPath);
+    // init
+    web3Connection.refreshStubConfig(web3StubConfig);
+    return web3Connection;
   }
 }
