@@ -23,6 +23,7 @@ public class Web3StubConfig {
       resourceInfo.setStubType(this.getCommon().getType());
 
       Map<Object, Object> properties = resourceInfo.getProperties();
+      properties.put(Web3Constant.WEB3_PROPERTY_CHAIN_URL, this.getService().getUrl());
       properties.put(resource.getName(), resource.getAddress());
       properties.put(resource.getName() + Web3Constant.WEB3_PROPERTY_ABI_SUFFIX, resource.getAbi());
       resourceInfos.add(resourceInfo);

@@ -177,6 +177,13 @@ public class Web3Connection implements Connection {
     response.setErrorMessage(Web3StatusCode.getStatusMessage(Web3StatusCode.Success));
     try {
       BigInteger blockNumber = clientWrapper.ethBlockNumber();
+      if (Objects.isNull(blockNumber)) {
+        response.setErrorCode(Web3StatusCode.BlockNumberNotExist);
+        response.setErrorMessage(
+            Web3StatusCode.getStatusMessage(Web3StatusCode.BlockNumberNotExist));
+        return;
+      }
+
       if (logger.isDebugEnabled()) {
         logger.debug("handleAsyncGetBlockNumberRequest,blockNumber: {}", blockNumber);
       }
@@ -211,6 +218,12 @@ public class Web3Connection implements Connection {
               from, to, data);
       EthCall ethCall = clientWrapper.ethCall(transaction);
 
+      if (Objects.isNull(ethCall)) {
+        response.setErrorCode(Web3StatusCode.CallNotSuccessStatus);
+        response.setErrorMessage("ethCall is null");
+        return;
+      }
+
       // ethCall has error
       if (ethCall.hasError()) {
         response.setErrorCode(Web3StatusCode.CallNotSuccessStatus);
@@ -244,6 +257,13 @@ public class Web3Connection implements Connection {
       EthSendTransaction ethSendTransaction =
           clientWrapper.ethSendRawTransaction(signedTransactionData);
 
+      if (Objects.isNull(ethSendTransaction)) {
+        response.setErrorCode(Web3StatusCode.TransactionReceiptNotExist);
+        response.setErrorMessage(
+            Web3StatusCode.getStatusMessage(Web3StatusCode.TransactionReceiptNotExist));
+        return;
+      }
+
       // ethSendTransaction has error
       if (ethSendTransaction.hasError()) {
         response.setErrorCode(Web3StatusCode.SendTransactionNotSuccessStatus);
@@ -253,6 +273,13 @@ public class Web3Connection implements Connection {
 
       // get transactionReceipt
       String transactionHash = ethSendTransaction.getTransactionHash();
+      if (StringUtils.isBlank(transactionHash)) {
+        response.setErrorCode(Web3StatusCode.TransactionReceiptNotExist);
+        response.setErrorMessage(
+            Web3StatusCode.getStatusMessage(Web3StatusCode.TransactionReceiptNotExist));
+        return;
+      }
+
       TransactionReceipt transactionReceipt =
           clientWrapper.ethGetTransactionReceipt(transactionHash);
 

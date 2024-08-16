@@ -2,9 +2,12 @@ package com.webank.wecross.stub.web3.client;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import org.reactivestreams.Subscriber;
+import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
+import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
@@ -31,4 +34,6 @@ public interface ClientWrapper {
   BigInteger ethGasPrice() throws IOException;
 
   BigInteger ethGasLimit() throws IOException;
+
+  void subscribe(EthFilter ethFilter, Subscriber<Log> subscriber);
 }

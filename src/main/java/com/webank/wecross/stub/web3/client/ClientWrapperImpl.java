@@ -5,16 +5,19 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Optional;
+import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
+import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.utils.RevertReasonExtractor;
@@ -117,6 +120,11 @@ public class ClientWrapperImpl implements ClientWrapper {
   @Override
   public BigInteger ethGasLimit() throws IOException {
     return web3j.ethMaxPriorityFeePerGas().send().getMaxPriorityFeePerGas();
+  }
+
+  @Override
+  public void subscribe(EthFilter ethFilter, Subscriber<Log> subscriber) {
+    web3j.ethLogFlowable(ethFilter).safeSubscribe(subscriber);
   }
 
   public String extractRevertReason(TransactionReceipt transactionReceipt, String data)

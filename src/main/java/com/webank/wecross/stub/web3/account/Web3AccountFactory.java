@@ -3,6 +3,7 @@ package com.webank.wecross.stub.web3.account;
 import com.webank.wecross.stub.web3.common.Web3Constant;
 import com.webank.wecross.stub.web3.config.Web3AccountConfig;
 import com.webank.wecross.stub.web3.config.Web3AccountConfigParser;
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -67,6 +68,8 @@ public class Web3AccountFactory {
       // build credentials from privateKey
       Credentials credentials = Credentials.create(secKey);
       Web3Account web3Account = new Web3Account(username, type, credentials);
+      web3Account.setDefault(isDefault);
+      web3Account.setKeyID(keyID);
 
       // check publicKey
       if (!Objects.equals(web3Account.getPublicKey(), pubKey)) {
@@ -84,7 +87,8 @@ public class Web3AccountFactory {
     }
   }
 
-  public Web3Account build(String name, String accountPath) throws IOException, CipherException {
+  public static Web3Account build(String name, String accountPath)
+      throws IOException, CipherException {
     Web3AccountConfigParser parser =
         new Web3AccountConfigParser(accountPath, Web3Constant.ACCOUNT_TOML_NAME);
     Web3AccountConfig web3AccountConfig = parser.loadConfig();
@@ -94,7 +98,7 @@ public class Web3AccountFactory {
     String password = account.getPassword();
 
     ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-    Resource accountFileResource = resolver.getResource(accountFile);
+    Resource accountFileResource = resolver.getResource(accountPath + File.separator + accountFile);
 
     Credentials credentials;
 
