@@ -13,16 +13,14 @@ public class Web3StatusCode {
   public static final int TransactionReceiptNotExist = 2010;
   public static final int TransactionNotExist = 2011;
   public static final int BlockNotExist = 2012;
-  public static final int TransactionProofNotExist = 2013;
-  public static final int TransactionReceiptProofNotExist = 2014;
+  public static final int BlockNumberNotExist = 2013;
 
   public static final int HandleSendTransactionFailed = 2021;
   public static final int HandleCallRequestFailed = 2022;
   public static final int HandleGetBlockNumberFailed = 2023;
   public static final int HandleGetBlockFailed = 2024;
   public static final int HandleGetTransactionFailed = 2025;
-  public static final int ListResourcesFailed = 2026;
-  public static final int RegisterContractFailed = 2027;
+  public static final int RegisterContractFailed = 2026;
 
   public static final int CallNotSuccessStatus = 2030;
   public static final int SendTransactionNotSuccessStatus = 2031;
@@ -64,11 +62,8 @@ public class Web3StatusCode {
       case TransactionNotExist:
         message = "transaction not exist";
         break;
-      case TransactionProofNotExist:
-        message = "transaction proof not exist";
-        break;
-      case TransactionReceiptProofNotExist:
-        message = "transaction receipt proof not exist";
+      case BlockNumberNotExist:
+        message = "block number not exist";
         break;
       case BlockNotExist:
         message = "block not exist";

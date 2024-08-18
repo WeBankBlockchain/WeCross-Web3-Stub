@@ -1,0 +1,4 @@
+[account]
+    type = "WEB3"
+    accountFile = '698d83382f9ffb72271cd0826479e8ab02077842.json'
+    password = '123456'
