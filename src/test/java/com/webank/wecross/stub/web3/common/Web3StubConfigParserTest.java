@@ -28,7 +28,7 @@ public class Web3StubConfigParserTest {
 
     assertEquals(service.getUrl(), "http://localhost:8545");
 
-    assertEquals(resources.size(), 2);
+    assertEquals(resources.size(), 3);
     assertEquals(resources.get(0).getName(), "WeCrossProxy");
     assertEquals(resources.get(0).getType(), "WEB3_CONTRACT");
     assertEquals(resources.get(0).getAddress(), "0xdbF599778641083c9717Ec69e984D67d3309B811");
