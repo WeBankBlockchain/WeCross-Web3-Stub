@@ -67,6 +67,11 @@ public class Web3StubConfig {
     public void setUrl(String url) {
       this.url = url;
     }
+
+    @Override
+    public String toString() {
+      return "Service{" + "url='" + url + '\'' + '}';
+    }
   }
 
   public static class Resource {

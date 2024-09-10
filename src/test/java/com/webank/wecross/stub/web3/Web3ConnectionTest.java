@@ -2,6 +2,7 @@ package com.webank.wecross.stub.web3;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -216,7 +217,7 @@ public class Web3ConnectionTest {
           }
           assertTrue(Objects.nonNull(ethCall));
           assertFalse(ethCall.hasError());
-          assertEquals(data, ethCall.getResult());
+          assertNull(ethCall.getResult());
         });
   }
 

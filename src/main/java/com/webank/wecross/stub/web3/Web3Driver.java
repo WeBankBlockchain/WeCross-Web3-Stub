@@ -175,25 +175,29 @@ public class Web3Driver implements Driver {
                 return;
               }
               TransactionResponse transactionResponse = new TransactionResponse();
-              EthCall ethCall = objectMapper.readValue(response.getData(), EthCall.class);
-              ContractABIDefinition contractABIDefinition =
-                  abiDefinitionFactory.loadABI(contractAbi);
-              ABIDefinition abiDefinition =
-                  contractABIDefinition.getFunctions().get(method).stream()
-                      .filter(
-                          function ->
-                              function.getInputs().size() == (args == null ? 0 : args.length))
-                      .findFirst()
-                      .orElseThrow(
-                          () ->
-                              new Web3StubException(
-                                  Web3StatusCode.MethodNotExist, "method not exist: " + method));
-              ABIObject outputObject = ABIObjectFactory.createOutputObject(abiDefinition);
               transactionResponse.setErrorCode(Web3StatusCode.Success);
               transactionResponse.setMessage(
                   Web3StatusCode.getStatusMessage(Web3StatusCode.Success));
-              transactionResponse.setResult(
-                  codecJsonWrapper.decode(outputObject, ethCall.getValue()).toArray(new String[0]));
+              EthCall ethCall = objectMapper.readValue(response.getData(), EthCall.class);
+              String ethCallValue = ethCall.getValue();
+              if (StringUtils.isNotBlank(ethCallValue)) {
+                ContractABIDefinition contractABIDefinition =
+                    abiDefinitionFactory.loadABI(contractAbi);
+                ABIDefinition abiDefinition =
+                    contractABIDefinition.getFunctions().get(method).stream()
+                        .filter(
+                            function ->
+                                function.getInputs().size() == (args == null ? 0 : args.length))
+                        .findFirst()
+                        .orElseThrow(
+                            () ->
+                                new Web3StubException(
+                                    Web3StatusCode.MethodNotExist, "method not exist: " + method));
+                ABIObject outputObject = ABIObjectFactory.createOutputObject(abiDefinition);
+
+                transactionResponse.setResult(
+                    codecJsonWrapper.decode(outputObject, ethCallValue).toArray(new String[0]));
+              }
               callback.onTransactionResponse(null, transactionResponse);
             } catch (Exception e) {
               logger.warn(" e: ", e);
