@@ -142,7 +142,6 @@ task makeJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, d
     exclude '**/*.toml'
     exclude '**/*.properties'
     exclude '**/*.yml'
-    exclude '**/performance/guomi/*'
 
     manifest {
         try {

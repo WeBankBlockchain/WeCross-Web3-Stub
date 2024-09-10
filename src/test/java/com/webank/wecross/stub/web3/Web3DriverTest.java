@@ -22,6 +22,7 @@ import com.webank.wecross.stub.web3.client.ClientWrapperWithExceptionMock;
 import com.webank.wecross.stub.web3.client.ClientWrapperWithNullMock;
 import com.webank.wecross.stub.web3.common.ObjectMapperFactory;
 import com.webank.wecross.stub.web3.common.Web3RequestType;
+import com.webank.wecross.stub.web3.common.Web3StatusCode;
 import com.webank.wecross.stub.web3.config.Web3StubConfig;
 import com.webank.wecross.stub.web3.config.Web3StubConfigParser;
 import com.webank.wecross.stub.web3.protocol.request.TransactionParams;
@@ -51,9 +52,9 @@ public class Web3DriverTest {
 
   @Before
   public void initializer() throws Exception {
-    String web3StubConfigPath = "classpath:./";
+    String web3StubConfigPath = "./";
     abiCodec = new ABICodec(new CryptoSuite(CryptoType.ECDSA_TYPE), true);
-    account = Web3AccountFactory.build("web3", "classpath:/account");
+    account = Web3AccountFactory.build("wallet", "./account");
     Web3StubConfig web3StubConfig =
         new Web3StubConfigParser(web3StubConfigPath, "stub-sample.toml").loadConfig();
     connection = new Web3Connection(new ClientWrapperImplMock(), web3StubConfigPath);
@@ -105,7 +106,10 @@ public class Web3DriverTest {
     request.setType(Web3RequestType.GET_BLOCK_NUMBER);
     driver.asyncGetBlockNumber(
         nonExistConnection,
-        (e, blockNumber) -> assertEquals(e.getMessage(), "block number not exist"));
+        (e, blockNumber) ->
+            assertEquals(
+                e.getMessage(),
+                Web3StatusCode.getStatusMessage(Web3StatusCode.BlockNumberNotExist)));
   }
 
   @Test
@@ -171,7 +175,7 @@ public class Web3DriverTest {
 
   @Test
   public void callTest() {
-    TransactionRequest transactionRequest = new TransactionRequest("set", new String[] {"0"});
+    TransactionRequest transactionRequest = new TransactionRequest("get", new String[] {});
     driver.asyncCall(
         transactionContext,
         transactionRequest,
@@ -186,7 +190,7 @@ public class Web3DriverTest {
 
   @Test
   public void callExceptionTest() {
-    TransactionRequest transactionRequest = new TransactionRequest("set", new String[] {"0"});
+    TransactionRequest transactionRequest = new TransactionRequest("get", new String[] {});
     driver.asyncCall(
         transactionContext,
         transactionRequest,
@@ -200,7 +204,7 @@ public class Web3DriverTest {
 
   @Test
   public void callNullTest() {
-    TransactionRequest transactionRequest = new TransactionRequest("set", new String[] {"a"});
+    TransactionRequest transactionRequest = new TransactionRequest("get", new String[] {});
     driver.asyncCall(
         transactionContext,
         transactionRequest,
@@ -214,7 +218,7 @@ public class Web3DriverTest {
 
   @Test
   public void callRevertTest() {
-    TransactionRequest transactionRequest = new TransactionRequest("set", new String[] {"a"});
+    TransactionRequest transactionRequest = new TransactionRequest("get", new String[] {});
     driver.asyncCall(
         transactionContext,
         transactionRequest,

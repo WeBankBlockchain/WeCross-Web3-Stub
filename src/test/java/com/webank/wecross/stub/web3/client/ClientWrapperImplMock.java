@@ -63,7 +63,6 @@ public class ClientWrapperImplMock extends ClientWrapperImpl {
     EthCall ethCall = new EthCall();
     ethCall.setId(1);
     ethCall.setJsonrpc("2.0");
-    ethCall.setResult(transaction.getData());
     return ethCall;
   }
 

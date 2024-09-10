@@ -170,4 +170,8 @@ public class ClientWrapperImpl implements ClientWrapper {
         web3j.ethGetTransactionReceipt(transactionHash).sendAsync().get();
     return transactionReceipt.getTransactionReceipt();
   }
+
+  public Web3j getWeb3j() {
+    return web3j;
+  }
 }
